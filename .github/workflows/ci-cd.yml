@@ -40,24 +40,15 @@ jobs:
         env:
           GIT_TOKEN: ${{ secrets.GITOPS_PAT }}
         run: |
-          # Remove any existing gitops directory
           if (Test-Path "gitops") { Remove-Item -Recurse -Force "gitops" }
-
-          # Clone repository
           git clone https://github.com/karris12/grade-api-gitops.git gitops
           Set-Location gitops
-
-          # Update image tag in deployment.yaml
           $file = "deployment.yaml"
           $content = Get-Content $file -Raw
           $content = $content -replace "image: ghcr.io/${{ github.repository }}:.*", "image: ghcr.io/${{ github.repository }}:${{ github.sha }}"
           Set-Content $file $content
-
-          # Commit changes
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
           git add deployment.yaml
           git commit -m "Update image to ${{ github.sha }}"
-
-          # Push with token embedded in URL
           git push -f https://$($env:GIT_TOKEN)@github.com/karris12/grade-api-gitops.git main
