@@ -59,9 +59,9 @@ jobs:
           cd gitops
 
           if [ "${{ steps.vars.outputs.ENV }}" = "prod" ]; then
-            FILE="environments/prod/deployment.yaml"
+            FILE="environments/prod/deployment.yml"
           else
-            FILE="environments/dev/deployment.yaml"
+            FILE="environments/dev/deployment.yml"
           fi
 
           sed -i "s|image: ghcr.io/${{ github.repository }}:.*|image: ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.TAG }}|" $FILE
