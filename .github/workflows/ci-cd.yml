@@ -55,7 +55,7 @@ jobs:
           GIT_TOKEN: ${{ secrets.GITOPS_PAT }}
         run: |
           rm -rf gitops
-          git clone https://github.com/karris12/grade-api-gitops.git gitops
+          git clone https://${{ secrets.GITOPS_PAT }}@github.com/karris12/grade-api-gitops.git gitops
           cd gitops
 
           if [ "${{ steps.vars.outputs.ENV }}" = "prod" ]; then
@@ -65,12 +65,10 @@ jobs:
           fi
 
           sed -i "s|image: ghcr.io/${{ github.repository }}:.*|image: ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.TAG }}|" $FILE
-
+      
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          
+      
           git add $FILE
           git commit -m "Update ${{ steps.vars.outputs.ENV }} image to ${{ steps.vars.outputs.TAG }}"
-          
-          git remote set-url origin https://${{ secrets.GITOPS_PAT }}@github.com/karris12/grade-api-gitops.git
           git push origin main
