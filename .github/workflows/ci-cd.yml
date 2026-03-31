@@ -8,7 +8,7 @@ on:
 
 jobs:
   build-and-push:
-    runs-on: windows-latest
+    runs-on: ubuntu-latest
 
     steps:
       # 1. Checkout code
@@ -18,7 +18,7 @@ jobs:
       # 2. Set environment (dev vs prod)
       - name: Set environment variables
         id: vars
-        shell: pwsh
+        shell: bash
         run: |
           if ("${env:GITHUB_REF}" -like "*main") {
             echo "ENV=prod" >> $env:GITHUB_OUTPUT
@@ -52,40 +52,24 @@ jobs:
 
       # 6. Update GitOps Repo
       - name: Update GitOps repository
-        shell: pwsh
         env:
           GIT_TOKEN: ${{ secrets.GITOPS_PAT }}
         run: |
-          # Clean old clone if exists
-          if (Test-Path "gitops") {
-            Remove-Item -Recurse -Force "gitops"
-          }
-
-          # Clone GitOps repo
+          rm -rf gitops
           git clone https://github.com/karris12/grade-api-gitops.git gitops
-          Set-Location gitops
+          cd gitops
 
-          # Select correct environment file
-          if ("${{ steps.vars.outputs.ENV }}" -eq "prod") {
-            $file = "environments/prod/deployment.yaml"
-          } else {
-            $file = "environments/dev/deployment.yaml"
-          }
+          if [ "${{ steps.vars.outputs.ENV }}" = "prod" ]; then
+            FILE="environments/prod/deployment.yaml"
+          else
+            FILE="environments/dev/deployment.yaml"
+          fi
 
-          # Read file
-          $content = Get-Content $file -Raw
+          sed -i "s|image: ghcr.io/${{ github.repository }}:.*|image: ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.TAG }}|" $FILE
 
-          # Replace image tag
-          $newImage = "image: ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.TAG }}"
-          $content = $content -replace "image: ghcr.io/.+?:.+", $newImage
-
-          # Save updated file
-          Set-Content $file $content
-
-          # Commit & push
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
 
-          git add $file
+          git add $FILE
           git commit -m "Update ${{ steps.vars.outputs.ENV }} image to ${{ steps.vars.outputs.TAG }}"
-          git push https://$($env:GIT_TOKEN)@github.com/karris12/grade-api-gitops.git main
+          git push https://${{ secrets.GITOPS_PAT }}@github.com/karris12/grade-api-gitops.git main
