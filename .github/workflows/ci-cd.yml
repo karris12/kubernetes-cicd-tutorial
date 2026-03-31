@@ -1,12 +1,12 @@
 name: CI/CD Pipeline
 on:
   push:
-    branches: [ main ]
-  pull_request:
-    branches: [ main ]
+    branches:
+      - main
+      - develop
 jobs:
   build-and-push:
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -26,29 +26,43 @@ jobs:
             [dns]
               nameservers = ["8.8.8.8", "8.8.4.4"]
 
+      - name: Set environment variables
+        id: vars
+        run: |
+          if [[ "${GITHUB_REF##*/}" == "main" ]]; then
+            echo "ENV=prod" >> $GITHUB_OUTPUT
+            echo "TAG=prod" >> $GITHUB_OUTPUT
+          else
+            echo "ENV=dev" >> $GITHUB_OUTPUT
+            echo "TAG=dev" >> $GITHUB_OUTPUT
+          fi
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
           push: true
           tags: |
-            ghcr.io/${{ github.repository }}:latest
+            ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.TAG }}
             ghcr.io/${{ github.repository }}:${{ github.sha }}
 
       - name: Update GitOps repository
-        shell: pwsh
-        env:
-          GIT_TOKEN: ${{ secrets.GITOPS_PAT }}
         run: |
-          if (Test-Path "gitops") { Remove-Item -Recurse -Force "gitops" }
+          rm -rf gitops
           git clone https://github.com/karris12/grade-api-gitops.git gitops
-          Set-Location gitops
-          $file = "deployment.yaml"
-          $content = Get-Content $file -Raw
-          $content = $content -replace "image: ghcr.io/${{ github.repository }}:.*", "image: ghcr.io/${{ github.repository }}:${{ github.sha }}"
-          Set-Content $file $content
+          cd gitops
+
+          if [[ "${{ steps.vars.outputs.ENV }}" == "prod" ]]; then
+            FILE="environments/prod/deployment.yaml"
+          else
+            FILE="environments/dev/deployment.yaml"
+          fi
+
+          sed -i "s|image: ghcr.io/${{ github.repository }}:.*|image: ghcr.io/${{ github.repository }}:${{ steps.vars.outputs.TAG }}|" $FILE
+
           git config --global user.name "GitHub Actions"
           git config --global user.email "actions@github.com"
-          git add deployment.yaml
-          git commit -m "Update image to ${{ github.sha }}"
-          git push -f https://$($env:GIT_TOKEN)@github.com/karris12/grade-api-gitops.git main
+
+          git add $FILE
+          git commit -m "Update ${{ steps.vars.outputs.ENV }} image to ${{ steps.vars.outputs.TAG }}"
+          git push https://${{ secrets.GITOPS_PAT }}@github.com/karris12/grade-api-gitops.git main
