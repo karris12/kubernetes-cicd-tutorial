@@ -61,9 +61,9 @@ jobs:
 
           # Select environment file
           if [ "${{ steps.vars.outputs.ENV }}" = "prod" ]; then
-            FILE="environments/prod/deployment.yaml"
+            FILE="environments/prod/deployment.yml"
           else
-            FILE="environments/dev/deployment.yaml"
+            FILE="environments/dev/deployment.yml"
           fi
 
           IMAGE="ghcr.io/karris12/${{ github.event.repository.name }}:${{ steps.vars.outputs.TAG }}"
