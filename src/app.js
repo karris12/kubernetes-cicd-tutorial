@@ -8,6 +8,11 @@ app.use(cors());
 
 let grades = [];
 
+// ✅ Add this Health Check route for Kubernetes/ArgoCD
+app.get('/', (req, res) => {
+  res.status(200).send('Grade Submission API is Healthy');
+});
+
 app.get('/grades', (req, res) => {
   console.log('Received GET request for grades');
   res.json(grades);
@@ -26,15 +31,3 @@ const port = 3000;
 app.listen(port, () => {
   console.log(`Grade service is running on port ${port}`);
 });
-
-
-// To get this Node.js API up and running:12
-//
-//  First, install the dependencies listed in package.json:
-//   npm install
-//
-// Then, start the API server with:
-//   node app.js
-//
-
-// Trigger CI/CD pipeline........trying1.....
