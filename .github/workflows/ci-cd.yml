@@ -21,7 +21,7 @@ jobs:
         run: |
           if [[ "${GITHUB_REF##*/}" == "main" ]]; then
             echo "ENV=prod" >> $GITHUB_OUTPUT
-            echo "TAG=prod" >> $GITHUB_OUTPUT
+            echo "TAG=${{ github.sha }}" >> $GITHUB_OUTPUT
           else
             echo "ENV=dev" >> $GITHUB_OUTPUT
             echo "TAG=dev" >> $GITHUB_OUTPUT
