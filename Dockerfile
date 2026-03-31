@@ -1,14 +1,19 @@
-FROM node:14
+# Use modern Node version
+FROM node:18
 
 WORKDIR /app
 
-# Copy package files first
+# Copy package files
 COPY src/package*.json ./
-RUN npm install
 
-# Copy source code
-COPY src/ ./
+# Install dependencies safely
+RUN npm install --legacy-peer-deps
 
+# Copy application code
+COPY src/ .
+
+# Expose port
 EXPOSE 3000
 
-CMD ["node", "app.js"]
+# Start app
+CMD ["node", "app.js"]]
