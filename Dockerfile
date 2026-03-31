@@ -16,4 +16,4 @@ COPY src/ .
 EXPOSE 3000
 
 # Start app
-CMD ["node", "app.js"]]
+CMD ["node", "app.js"]
